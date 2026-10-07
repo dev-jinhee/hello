@@ -26,6 +26,9 @@ jobs:
     - name: 메이븐 빌드
       run: mvn clean package
 
+    - name: 도커 이미지 빌드
+      run: docker build -t hello .
+
     - name: 보안환경변수를 이용하여 개인키 파일생성
       run: |
         mkdir -p ~/.ssh
