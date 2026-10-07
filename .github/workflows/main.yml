@@ -7,7 +7,7 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest  # 어떤 운영체제 버전에서 실행하는지 설정 cancel-timeout-minutes: cancel-timeout-minutes: 
+    runs-on: ubuntu-latest  # 어떤 운영체제 버전에서 실행하는지 설정
 
     steps:
     - name: git 저장소 소스 복사전의 폴더 구조
@@ -27,7 +27,16 @@ jobs:
       run: mvn clean package
 
     - name: 도커 이미지 빌드
-      run: docker build -t hello .
+      run: docker build -t ${{ secrets.DOCKER_USER }}/hello:latest .
+
+    - name: Docker Hub 로그인
+      uses: docker/login-action@v3
+      with:
+        username: ${{ secrets.DOCKER_USER }}
+        password: ${{ secrets.DOCKER_ACCESS_TOKEN }}
+
+    - name: 도커 이미지 푸시
+      run: docker push ${{ secrets.DOCKER_USER }}/hello:latest
 
     - name: 보안환경변수를 이용하여 개인키 파일생성
       run: |
@@ -41,16 +50,13 @@ jobs:
         ssh-private-key: ${{ secrets.EC2_SSH_KEY }}
         
     - name: 서버연결시 지문등록
-      run: ssh-keyscan -t ed25519 13.125.180.143 >> ~/.ssh/known_hosts
-       
-#    - name: 개인키파일확인 
-#      run: |
-#        cat ~/.ssh/id_rsa
-#        cat ~/.ssh/known_hosts
+      run: ssh-keyscan -t ed25519 43.201.146.222 >> ~/.ssh/known_hosts
  
-    - name: 운영서버에 배포 진행 
+    - name: 운영서버에 도커 배포 진행 
       run: |
-        scp target/hello-1.0.0.war ubuntu@13.125.180.143:~/ROOT.war
-        ssh -i ~/.ssh/id_rsa ubuntu@13.125.180.143 << 'EOF'
-          cp ~/ROOT.war /opt/tomcat/webapps/
+        ssh -i ~/.ssh/id_rsa ubuntu@43.201.146.222 << 'EOF'
+          sudo docker stop hello-app || true
+          sudo docker rm hello-app || true
+          sudo docker pull ${{ secrets.DOCKER_USER }}/hello:latest
+          sudo docker run -d --name hello-app -p 8080:8080 ${{ secrets.DOCKER_USER }}/hello:latest
         EOF
