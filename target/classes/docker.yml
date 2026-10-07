@@ -69,5 +69,5 @@ jobs:
            docker stop hello_app || true
            docker rm hello_app || true
            docker rmi ${{ secrets.DOCKER_USER }}/hello:latest || true
-           docker run -dit --name hello_app -p 80:8080 ${{ secrets.DOCKER_USER }}/hello:latest
+           docker run -dit --name hello_app --add-host=host.docker.internal:host-gateway -p 80:8080 ${{ secrets.DOCKER_USER }}/hello:latest
         EOF
